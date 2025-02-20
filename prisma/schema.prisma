@@ -4,6 +4,9 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// Changes to model require running `prisma migrate dev --name <name>` to push schema changes 
+// and `prisma generate` to update client
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,26 +16,125 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User 'shim' that maps 1:1 to clerk user, so we can join to related resources easier
 model User {
   id          Int       @id @default(autoincrement())   
   clerkId     String    @unique
-  email       String    @unique
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  firstName   String?
-  lastName    String?
-  posts       Post[]
+
+  whiteboards   Whiteboard[]
+  collaborators Collaborator[] // Whiteboards user has access to
+  snapshots     Snapshot[]   // Snapshots created by user
+  comments      Comment[]    // Comments made by user
 
   @@index([clerkId])
 }
 
-model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean @default(false)
-  authorId  Int
-  author    User    @relation(fields: [authorId], references: [id])
+model Whiteboard {
+  id            Int         @id @default(autoincrement())
+  name          String
+  description   String?
+  isPublic      Boolean     @default(false)
+  content       Json
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  owner         User        @relation(fields: [ownerId], references: [id])
+  ownerId       Int
+  folder        Folder?     @relation(fields: [folderId], references: [id])
+  folderId      Int?    // Optional - allows whiteboards to exist outside folders
+  
+  collaborators Collaborator[]
+  snapshots     Snapshot[]
+  comments      Comment[]
+
+  @@index([ownerId])
+  @@index([folderId])
+}
+
+// For managing shared access
+model Collaborator {
+  id           Int      @id @default(autoincrement())
+  role         Role        @default(VIEWER) // VIEWER, EDITOR, ADMIN
+  createdAt    DateTime    @default(now())
+  
+  // Relations
+  user         User        @relation(fields: [userId], references: [id])
+  userId       Int
+  whiteboard   Whiteboard  @relation(fields: [whiteboardId], references: [id])
+  whiteboardId Int
+
+  @@unique([userId, whiteboardId])
+  @@index([userId])
+  @@index([whiteboardId])
+}
+
+// For organizing whiteboards
+model Folder {
+  id            Int           @id @default(autoincrement())
+  name          String
+  description   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  // Relations
+  whiteboards   Whiteboard[]
+  parent        Folder?       @relation("FolderHierarchy", fields: [parentId], references: [id])
+  parentId      Int?
+  children      Folder[]      @relation("FolderHierarchy")
+}
+
+// For version control/history
+model Snapshot {
+  id           Int      @id @default(autoincrement())
+  name         String?     // Optional snapshot name
+  content      Json        // tldraw state at time of snapshot
+  createdAt    DateTime    @default(now())
+  
+  // Relations
+  whiteboard   Whiteboard  @relation(fields: [whiteboardId], references: [id])
+  whiteboardId Int
+  creator      User        @relation(fields: [creatorId], references: [id])
+  creatorId    Int
+
+  @@index([whiteboardId])
+  @@index([creatorId])
+}
+
+// For collaborative comments/annotations
+model Comment {
+  id           Int      @id @default(autoincrement())
+  content      String
+
+  /** 
+    Remove whichever isn't used after developing the feature. 
+    Might just do chat-style side window instead of comments on canvas.
+  */
+  position     Json?       // x,y coordinates on canvas
+  x            Float?      // x coordinate
+  y            Float?      // y coordinate
+  
+  resolved     Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  // Relations
+  whiteboard   Whiteboard  @relation(fields: [whiteboardId], references: [id])
+  whiteboardId Int
+  author       User        @relation(fields: [authorId], references: [id])
+  authorId     Int
+  parent       Comment?    @relation("CommentThread", fields: [parentId], references: [id])
+  parentId     Int?
+  replies      Comment[]   @relation("CommentThread")
+
+  @@index([whiteboardId])
+  @@index([authorId])
+}
+
+enum Role {
+  VIEWER
+  EDITOR
+  ADMIN
 }
 
 

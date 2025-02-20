@@ -1,15 +1,15 @@
 # Init Checklist
 
-- [ ] `npm install` && `npm run dev`
-- [ ] Create Clerk application in dashboard
-- [ ] Create PostgreSQL dev instance somewhere (_can run locally if needed_)
-- [ ] Copy `.env.example` -> `.env.local` and fill in the values
+- [x] `npm install` && `npm run dev`
+- [x] Create Clerk application in dashboard
+- [x] Create PostgreSQL dev instance somewhere (_can run locally if needed_)
+- [x] Copy `.env.example` -> `.env.local` and fill in the values
 - [ ] https://www.prisma.io/docs/guides/nextjs
-  - [ ] Tweak starter models in `schema.prisma` as needed
-  - [ ] Run `npx prisma migrate dev --name init` to push schema changes upstream (will also regenerate client as needed)
-  - [ ] Update seed.ts w/ relevant seed data, then run `npx prisma db seed`
-  - [ ] Run prisma studio to view DB via UI with `npx prisma studio`
-- [ ] _May need to restart TS server if getting errors after above do to all the type changes_
+  - [x] Tweak starter models in `schema.prisma` as needed
+  - [x] Run `npx prisma migrate dev --name init` to push schema changes upstream (will also regenerate client as needed)
+  - [x] Update seed.ts w/ relevant seed data, then run `npx prisma db seed`
+  - [x] Run prisma studio to view DB via UI with `npx prisma studio`
+- [x] _May need to restart TS server if getting errors after above do to all the type changes_
 - [ ] Start building!
 
 <br>
