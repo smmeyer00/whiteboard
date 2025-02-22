@@ -1,25 +1,10 @@
-import ClientTldraw from "@/components/ClientTldraw";
-import prisma from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
+import Link from "next/link";
+import React, { FC } from "react";
 
-export default async function Home() {
-  const clerkUser = await currentUser();
-  const allUsers = await prisma.user.findMany();
-
+export default function HomePage(): React.ReactNode {
   return (
-    <div className="w-full h-screen flex flex-col items-center space-y-8">
-      <h1 className="text-4xl font-bold text-center text-foreground">
-        {clerkUser ? `Hello, ${clerkUser.fullName}` : "Hello, World!"}
-      </h1>
-
-      <h2 className="text-2xl font-bold text-center text-white">
-        {clerkUser ? `Hello, ${clerkUser.id}` : "<user_not_loaded>"}
-      </h2>
-
-      <div className="flex-grow bg-red-300 w-full">
-        {/* <Tldraw /> */}
-        <ClientTldraw />
-      </div>
+    <div className="h-screen w-full items-center justify-center flex flex-col">
+      <Link href="/d/1">click me to go to whiteboard 1</Link>
     </div>
   );
 }
