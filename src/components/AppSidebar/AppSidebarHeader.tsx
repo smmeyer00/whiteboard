@@ -6,6 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSkeleton,
 } from "../ui/sidebar";
 import {
   DropdownMenu,
@@ -27,7 +28,12 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import React, { FC, useEffect, useState } from "react";
-import { useWhiteboard } from "@/hooks/whiteboard";
+import {
+  useUpdateWhiteboardMutation,
+  useWhiteboardQuery,
+} from "@/hooks/whiteboard";
+import { Skeleton } from "../ui/skeleton";
+import { toast } from "sonner";
 
 interface AppSidebarHeaderProps {
   docId: number;
@@ -39,10 +45,13 @@ export const AppSidebarHeader: FC<AppSidebarHeaderProps> = ({
 }): React.ReactNode => {
   console.log("HEADER with docId ", docId);
 
-  const { data, isLoading } = useWhiteboard(docId);
+  const { data, isLoading } = useWhiteboardQuery(docId);
+  const { mutate, isSuccess, isError } = useUpdateWhiteboardMutation();
 
   const [diagramName, setDiagramName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (data) {
@@ -51,23 +60,47 @@ export const AppSidebarHeader: FC<AppSidebarHeaderProps> = ({
     }
   }, [data]);
 
+  useEffect(() => {
+    if (isSuccess) {
+      toast("Success", {
+        description: "Document details updated successfully",
+      });
+      setDialogOpen(false);
+    }
+  }, [isSuccess]);
+
+  useEffect(() => {
+    if (isError) {
+      toast.error("Error", {
+        description: "Failed to update document details",
+      });
+    }
+  }, [isError]);
+
+  const dialogSubmitHandler = () => {
+    if (!data || !diagramName.trim()) return;
+
+    mutate({
+      id: docId,
+      data: {
+        name: diagramName.trim(),
+        description: description.trim() || null, // Convert empty string to null
+      },
+    });
+  };
+
   return (
     <SidebarHeader>
-      <Dialog>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <SidebarMenu>
           <SidebarMenuItem>
-            {/**
-             * This will hold doc title
-             *
-             * Show at max => 24 chars + ...
-             *
-             * */}
-            <DialogTrigger asChild>
+            <DialogTrigger disabled={isLoading} asChild>
               <SidebarMenuButton>
-                {/* IAM Sys Design adsf asdf... */}
-                {isLoading && "Loading..."}
-                {!isLoading && diagramName.substring(0, 24)}
-                {!isLoading && diagramName.length > 24 && "..."}
+                {isLoading || !data ? (
+                  <Skeleton className="w-full h-full" />
+                ) : (
+                  ellipseString(data.name, 24)
+                )}
                 <Pencil className="ml-auto" />
               </SidebarMenuButton>
             </DialogTrigger>
@@ -110,10 +143,23 @@ export const AppSidebarHeader: FC<AppSidebarHeaderProps> = ({
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Save changes</Button>
+            <Button
+              disabled={
+                isLoading ||
+                (data?.name === diagramName && data.description === description)
+              }
+              onClick={dialogSubmitHandler}
+              type="submit"
+            >
+              Save changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </SidebarHeader>
   );
+};
+
+const ellipseString = (str: string, max: number) => {
+  return str.length < max ? str : str.substring(0, max) + "...";
 };

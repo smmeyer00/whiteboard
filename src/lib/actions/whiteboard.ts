@@ -4,7 +4,6 @@ import prisma from "../prisma";
 import { Prisma } from "@prisma/client";
 
 export async function getWhiteboard(id: number) {
-  console.log("getWhiteboard server action with id ", id);
   // Your prisma query here
   const whiteboard = await prisma.whiteboard.findUnique({
     where: { id },
@@ -16,12 +15,14 @@ export async function getWhiteboard(id: number) {
   return whiteboard;
 }
 
-// TODO fix this
-// export async function updateWhiteboard(id: number, data: any ) {
-//   // Your prisma query here
-//   const whiteboard = await prisma.whiteboard.update({
-//     where: { id },
-//     data,
-//   });
-//   return whiteboard;
-// }
+export async function updateWhiteboard(
+  id: number,
+  data: Prisma.WhiteboardUpdateInput,
+) {
+  // Your prisma query here
+  const whiteboard = await prisma.whiteboard.update({
+    where: { id },
+    data,
+  });
+  return whiteboard;
+}

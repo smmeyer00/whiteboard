@@ -1,9 +1,12 @@
+"use client";
+
 import {
   Calendar,
   ChevronDown,
   ChevronUp,
   Home,
   Inbox,
+  LucideProps,
   Search,
   Settings,
   User2,
@@ -29,18 +32,28 @@ import {
 } from "../ui/dropdown-menu";
 import { AppSidebarHeader } from "./AppSidebarHeader";
 import { AppSidebarFooter } from "./AppSidebarFooter";
-import { FC } from "react";
+import { FC, ForwardRefExoticComponent, RefAttributes } from "react";
+
+interface BaseItem {
+  title: string;
+  icon: ForwardRefExoticComponent<
+    Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
+  >;
+}
+
+type Item = BaseItem &
+  ({ url: string; onClick?: never } | { url?: never; onClick: () => void });
 
 // Menu items.
-const items = [
+const items: Item[] = [
   {
     title: "Home",
-    url: "#",
+    url: "/",
     icon: Home,
   },
   {
     title: "Inbox",
-    url: "#",
+    onClick: () => console.log("Inbox clicked"),
     icon: Inbox,
   },
   {
@@ -64,24 +77,30 @@ interface AppSidebarProps {
   docId: number;
 }
 
-// TODO: possibly swap to 'icon' mode and add custom trigger
 export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
   return (
     <Sidebar collapsible="icon" variant="floating">
       <AppSidebarHeader docId={docId} />
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel>Document</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                  {item.url ? (
+                    <SidebarMenuButton asChild>
+                      <a href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton onClick={item.onClick}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
