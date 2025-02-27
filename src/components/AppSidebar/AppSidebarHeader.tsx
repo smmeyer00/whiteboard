@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { FileText, Pencil } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -96,6 +96,7 @@ export const AppSidebarHeader: FC<AppSidebarHeaderProps> = ({
           <SidebarMenuItem>
             <DialogTrigger disabled={isLoading} asChild>
               <SidebarMenuButton>
+                <FileText />
                 {isLoading || !data ? (
                   <Skeleton className="w-full h-full" />
                 ) : (
