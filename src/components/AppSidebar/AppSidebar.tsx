@@ -99,15 +99,43 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
             });
           },
         },
-        { title: "Delete", onClick: () => console.log("Delete clicked") },
-        { title: "Export", onClick: () => console.log("Export clicked") },
+        // TODO: duplicate (if something is selected)
+        {
+          title: "Delete",
+          onClick: () => editor?.deleteShapes(editor?.getSelectedShapeIds()),
+        },
+        {
+          title: "Export",
+          onClick: () => {
+            tldrawExport(editor, "o.png", {
+              format: "png",
+              quality: 1,
+              scale: 1,
+              background: true,
+            });
+          },
+        },
+        // TODO: edit link (if shape is selected)
+        // TODO: flatten (if shape is selected) <- I believe this means convert to image w/ some padding
+        // TODO: Toggle locked (if shape is selected)
         {
           title: "Unlock All",
-          onClick: () => console.log("Unlock All clicked"),
+          onClick: () => {
+            editor &&
+              Array.from(editor.getPageShapeIds(editor.getPages()[0])).forEach(
+                (s) => {
+                  if (editor.getShape(s)?.isLocked) {
+                    editor.toggleLock([s]);
+                  }
+                },
+              );
+          },
         },
         {
           title: "Select All",
-          onClick: () => console.log("Select All clicked"),
+          onClick: () => {
+            editor?.selectAll();
+          },
         },
       ],
     },

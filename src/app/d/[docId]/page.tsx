@@ -1,16 +1,18 @@
+"use client";
+
 import { AppSidebar } from "@/components/AppSidebar";
 import CustomTldraw from "@/components/CustomTldraw";
 import { TldrawProvider } from "@/contexts/TldrawContext";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { currentUser } from "@clerk/nextjs/server";
+import { useWhiteboardQuery } from "@/hooks/whiteboard";
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 
-export default async function Home({
-  params,
-}: {
-  params: Promise<{ docId: string }>;
-}) {
-  const clerkUser = await currentUser();
-  const docId = (await params).docId;
+export default function Home() {
+  const { docId } = useParams<{ docId: string }>();
+  const router = useRouter();
+
+  const { data, isLoading } = useWhiteboardQuery(Number(docId));
 
   /**
    * TODO:  need to handle primary key syncing w/ Tanstack Query syncing.
