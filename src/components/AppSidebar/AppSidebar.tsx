@@ -36,6 +36,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { AppSidebarHeader } from "./AppSidebarHeader";
@@ -55,13 +56,14 @@ interface BaseItem {
   icon: ForwardRefExoticComponent<
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
   >;
+  customRenderElement?: React.ReactNode;
 }
 
 type Item = BaseItem &
   (
     | { url: string; onClick?: never; subItems?: never }
     | { url?: never; onClick: () => void; subItems?: never }
-    | { url?: never; onClick?: never; subItems: SubItem[] }
+    | { url?: never; onClick?: never; subItems: SubItem[][] }
   );
 
 interface AppSidebarProps {
@@ -76,119 +78,191 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
       title: "Edit",
       icon: PencilRuler,
       subItems: [
-        { title: "Undo", onClick: () => editor?.undo() },
-        { title: "Redo", onClick: () => editor?.redo() },
-        {
-          title: "Cut",
-          onClick: () => {
-            // if (!editor) return; // TODO: disable if nothing selected
-            menuClipBoardEvents?.cut("menu");
+        [
+          { title: "Undo", onClick: () => editor?.undo() },
+          { title: "Redo", onClick: () => editor?.redo() },
+        ],
+        [
+          {
+            title: "Cut",
+            onClick: () => {
+              // if (!editor) return; // TODO: disable if nothing selected
+              menuClipBoardEvents?.cut("menu");
+            },
           },
-        },
-        {
-          title: "Copy",
-          onClick: () => {
-            menuClipBoardEvents?.copy("menu");
+          {
+            title: "Copy",
+            onClick: () => {
+              menuClipBoardEvents?.copy("menu");
+            },
           },
-        },
-        {
-          title: "Paste",
-          onClick: () => {
-            navigator.clipboard.read().then((clipboardItems) => {
-              menuClipBoardEvents?.paste(clipboardItems, "menu");
-            });
+          {
+            title: "Paste",
+            onClick: () => {
+              navigator.clipboard.read().then((clipboardItems) => {
+                menuClipBoardEvents?.paste(clipboardItems, "menu");
+              });
+            },
           },
-        },
-        // TODO: duplicate (if something is selected)
-        {
-          title: "Delete",
-          onClick: () => editor?.deleteShapes(editor?.getSelectedShapeIds()),
-        },
-        {
-          title: "Export",
-          onClick: () => {
-            tldrawExport(editor, "o.png", {
-              format: "png",
-              quality: 1,
-              scale: 1,
-              background: true,
-            });
+          // TODO: duplicate (if something is selected)
+          {
+            title: "Delete",
+            onClick: () => editor?.deleteShapes(editor?.getSelectedShapeIds()),
           },
-        },
+        ],
+        [
+          {
+            title: "Export",
+            onClick: () => {
+              tldrawExport(editor, "o.png", {
+                format: "png",
+                quality: 1,
+                scale: 1,
+                background: true,
+              });
+            },
+          },
+        ],
         // TODO: edit link (if shape is selected)
         // TODO: flatten (if shape is selected) <- I believe this means convert to image w/ some padding
         // TODO: Toggle locked (if shape is selected)
-        {
-          title: "Unlock All",
-          onClick: () => {
-            editor &&
-              Array.from(editor.getPageShapeIds(editor.getPages()[0])).forEach(
-                (s) => {
+        [
+          {
+            title: "Unlock All",
+            onClick: () => {
+              editor &&
+                Array.from(
+                  editor.getPageShapeIds(editor.getPages()[0]),
+                ).forEach((s) => {
                   if (editor.getShape(s)?.isLocked) {
                     editor.toggleLock([s]);
                   }
-                },
-              );
+                });
+            },
           },
-        },
-        {
-          title: "Select All",
-          onClick: () => {
-            editor?.selectAll();
+        ],
+        [
+          {
+            title: "Select All",
+            onClick: () => {
+              editor?.selectAll();
+            },
           },
-        },
+        ],
       ],
     },
     {
       title: "View",
       icon: Telescope,
       subItems: [
-        { title: "Zoom In", onClick: () => console.log("Zoom in clicked") },
-        { title: "Zoom Out", onClick: () => console.log("Zoom out clicked") },
-        {
-          title: "Zoom to Fit",
-          onClick: () => console.log("Zoom to fit clicked"),
-        },
+        [
+          {
+            title: "Zoom In",
+            onClick: () =>
+              editor?.zoomIn(editor.getViewportScreenCenter(), {
+                animation: { duration: 200 },
+              }),
+          },
+          {
+            title: "Zoom Out",
+            onClick: () =>
+              editor?.zoomOut(editor.getViewportScreenCenter(), {
+                animation: { duration: 200 },
+              }),
+          },
+          {
+            title: "Zoom to Fit",
+            onClick: () => editor?.zoomToFit({ animation: { duration: 200 } }),
+          },
+        ],
       ],
     },
     {
       title: "Preferences",
       icon: Settings2,
       subItems: [
-        {
-          title: "Always Snap",
-          onClick: () => console.log("Always snap clicked"),
-        },
-        { title: "Tool Lock", onClick: () => console.log("Tool lock clicked") },
-        { title: "Show Grid", onClick: () => console.log("Show grid clicked") },
-        {
-          title: "Select on Wrap",
-          onClick: () => console.log("Select on wrap clicked"),
-        },
-        {
-          title: "Focus Mode",
-          onClick: () => console.log("Focus mode clicked"),
-        },
-        {
-          title: "Edge Scrolling",
-          onClick: () => console.log("Edge scrolling clicked"),
-        },
-        {
-          title: "Reduce Motion",
-          onClick: () => console.log("Reduce motion clicked"),
-        },
-        {
-          title: "Dynamic Size",
-          onClick: () => console.log("Dynamic size clicked"),
-        },
-        {
-          title: "Paste at Cursor",
-          onClick: () => console.log("Paste at cursor clicked"),
-        },
-        {
-          title: "Debug Mode",
-          onClick: () => console.log("Debug mode clicked"),
-        },
+        [
+          {
+            title: "Always Snap",
+            onClick: () => {
+              editor?.user.updateUserPreferences({
+                isSnapMode: !editor.user.getIsSnapMode(),
+              });
+            },
+          },
+          {
+            title: "Tool Lock",
+            onClick: () => {
+              editor?.updateInstanceState({
+                isToolLocked: !editor.getInstanceState().isToolLocked,
+              });
+            },
+          },
+          {
+            title: "Show Grid",
+            onClick: () => {
+              editor?.updateInstanceState({
+                isGridMode: !editor.getInstanceState().isGridMode,
+              });
+            },
+          },
+          {
+            title: "Select on Wrap",
+            onClick: () => {
+              editor?.user.updateUserPreferences({
+                isWrapMode: !editor.user.getIsWrapMode(),
+              });
+            },
+          },
+          {
+            title: "Focus Mode",
+            onClick: () => {
+              editor?.updateInstanceState({
+                isFocusMode: !editor.getInstanceState().isFocusMode,
+              });
+            },
+          },
+          {
+            title: "Edge Scrolling",
+            onClick: () => {
+              editor?.user.updateUserPreferences({
+                edgeScrollSpeed: editor.user.getEdgeScrollSpeed() === 0 ? 1 : 0,
+              });
+            },
+          },
+          {
+            title: "Reduce Motion",
+            onClick: () => {
+              editor?.user.updateUserPreferences({
+                animationSpeed: editor.user.getAnimationSpeed() === 0 ? 1 : 0,
+              });
+            },
+          },
+          {
+            title: "Dynamic Size",
+            onClick: () => {
+              editor?.user.updateUserPreferences({
+                isDynamicSizeMode: !editor.user.getIsDynamicResizeMode(),
+              });
+            },
+          },
+          {
+            title: "Paste at Cursor",
+            onClick: () => {
+              editor?.user.updateUserPreferences({
+                isPasteAtCursorMode: !editor.user.getIsPasteAtCursorMode(),
+              });
+            },
+          },
+          {
+            title: "Debug Mode",
+            onClick: () => {
+              editor?.updateInstanceState({
+                isFocusMode: !editor.getInstanceState().isFocusMode,
+              });
+            },
+          },
+        ],
       ],
     },
     {
@@ -207,7 +281,7 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
       title: "Keyboard Shortcuts",
       icon: Keyboard,
       onClick: () => {
-        editor?.setCurrentTool("hand");
+        // TODO: build pretty dialog/modal that opens on this click
       },
     },
   ];
@@ -233,14 +307,24 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
                           </SidebarMenuButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent side="right" align="start">
-                          {item.subItems.map((subItem) => (
-                            <DropdownMenuItem
-                              key={subItem.title}
-                              onClick={subItem.onClick}
-                              className="hover:cursor-pointer"
-                            >
-                              {subItem.title}
-                            </DropdownMenuItem>
+                          {item.subItems.map((group, groupIndex) => (
+                            <>
+                              {groupIndex > 0 && (
+                                <DropdownMenuSeparator
+                                  key={`separator${groupIndex}`}
+                                />
+                              )}
+                              {group.map((subItem) => (
+                                <DropdownMenuItem
+                                  key={subItem.title}
+                                  onClick={subItem.onClick}
+                                  className="hover:cursor-pointer"
+                                >
+                                  {subItem.title}
+                                  {/* TODO: maybe add little icons showing kbd shortcuts */}
+                                </DropdownMenuItem>
+                              ))}
+                            </>
                           ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
