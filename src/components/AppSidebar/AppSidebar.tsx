@@ -15,6 +15,7 @@ import {
   Search,
   Settings,
   Settings2,
+  SquarePlus,
   Telescope,
   User2,
 } from "lucide-react";
@@ -41,10 +42,17 @@ import {
 } from "../ui/dropdown-menu";
 import { AppSidebarHeader } from "./AppSidebarHeader";
 import { AppSidebarFooter } from "./AppSidebarFooter";
-import { FC, ForwardRefExoticComponent, RefAttributes } from "react";
+import { FC, ForwardRefExoticComponent, Fragment, RefAttributes } from "react";
 import { useTldraw } from "@/contexts/TldrawContext";
 import { tldrawExport } from "@/lib/utils";
-import { copyAs, useActions, useMenuClipboardEvents } from "tldraw";
+import {
+  copyAs,
+  useActions,
+  useDefaultHelpers,
+  useMenuClipboardEvents,
+} from "tldraw";
+import KbdShortcutsSidebarMenuItem from "./KbdShortcutsSidebarMenuItem";
+import ExportSidebarMenuItem from "./ExportSidebarMenuItem";
 
 interface SubItem {
   title: string;
@@ -56,28 +64,29 @@ interface BaseItem {
   icon: ForwardRefExoticComponent<
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
   >;
-  customRenderElement?: React.ReactNode;
+  customRenderElement?: () => React.ReactNode;
 }
 
 type Item = BaseItem &
   (
-    | { url: string; onClick?: never; subItems?: never }
-    | { url?: never; onClick: () => void; subItems?: never }
-    | { url?: never; onClick?: never; subItems: SubItem[][] }
+    | { url: string; onClick?: never; subItemGroups?: never }
+    | { url?: never; onClick: () => void; subItemGroups?: never }
+    | { url?: never; onClick?: never; subItemGroups: SubItem[][] }
   );
 
 interface AppSidebarProps {
   docId: number;
 }
 
+// TODO: refactor to just use the built-in actions (available thru my custom context) for everything
 export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
-  const { editor, menuClipBoardEvents } = useTldraw();
+  const { editor, menuClipBoardEvents, actions } = useTldraw();
 
   const docItems: Item[] = [
     {
       title: "Edit",
       icon: PencilRuler,
-      subItems: [
+      subItemGroups: [
         [
           { title: "Undo", onClick: () => editor?.undo() },
           { title: "Redo", onClick: () => editor?.redo() },
@@ -110,21 +119,25 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
             onClick: () => editor?.deleteShapes(editor?.getSelectedShapeIds()),
           },
         ],
-        [
-          {
-            title: "Export",
-            onClick: () => {
-              tldrawExport(editor, "o.png", {
-                format: "png",
-                quality: 1,
-                scale: 1,
-                background: true,
-              });
-            },
-          },
-        ],
+        // TODO: maybe re-add this to maintain parity w/ tldraw actions menu, and abstract the export dialog to be used here as well
+        // [
+        //   {
+        //     title: "Export",
+        //     onClick: () => {
+        //       tldrawExport(editor, "o.png", {
+        //         format: "png",
+        //         quality: 1,
+        //         scale: 1,
+        //         background: true,
+        //       });
+        //     },
+        //   },
+        // ],
+
         // TODO: edit link (if shape is selected)
         // TODO: flatten (if shape is selected) <- I believe this means convert to image w/ some padding
+        //       https://github.com/tldraw/tldraw/blob/main/packages/tldraw/src/lib/ui/context/actions.tsx#L1382
+
         // TODO: Toggle locked (if shape is selected)
         [
           {
@@ -154,7 +167,7 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
     {
       title: "View",
       icon: Telescope,
-      subItems: [
+      subItemGroups: [
         [
           {
             title: "Zoom In",
@@ -177,10 +190,31 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
         ],
       ],
     },
+    // TODO: Add Insert w/ sub-items Embed and Media (just trigger the built in dialog for each)
+    {
+      title: "Insert",
+      icon: SquarePlus,
+      subItemGroups: [
+        [
+          {
+            title: "Embed",
+            onClick: () => {
+              actions && actions["insert-embed"]?.onSelect("unknown");
+            },
+          },
+          {
+            title: "Media",
+            onClick: () => {
+              actions && actions["insert-media"]?.onSelect("unknown");
+            },
+          },
+        ],
+      ],
+    },
     {
       title: "Preferences",
       icon: Settings2,
-      subItems: [
+      subItemGroups: [
         [
           {
             title: "Always Snap",
@@ -266,6 +300,7 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
       ],
     },
     {
+      customRenderElement: ExportSidebarMenuItem,
       title: "Export",
       icon: Download,
       onClick: () => {
@@ -283,6 +318,7 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
       onClick: () => {
         // TODO: build pretty dialog/modal that opens on this click
       },
+      customRenderElement: KbdShortcutsSidebarMenuItem,
     },
   ];
 
@@ -295,7 +331,9 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
           <SidebarGroupContent>
             <SidebarMenu>
               {docItems.map((item) => {
-                if (item.subItems) {
+                if (item.customRenderElement) {
+                  return <item.customRenderElement key={item.title} />;
+                } else if (item.subItemGroups) {
                   return (
                     <SidebarMenuItem key={item.title}>
                       <DropdownMenu>
@@ -307,8 +345,8 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
                           </SidebarMenuButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent side="right" align="start">
-                          {item.subItems.map((group, groupIndex) => (
-                            <>
+                          {item.subItemGroups.map((group, groupIndex) => (
+                            <Fragment key={`group-${groupIndex}`}>
                               {groupIndex > 0 && (
                                 <DropdownMenuSeparator
                                   key={`separator${groupIndex}`}
@@ -324,7 +362,7 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
                                   {/* TODO: maybe add little icons showing kbd shortcuts */}
                                 </DropdownMenuItem>
                               ))}
-                            </>
+                            </Fragment>
                           ))}
                         </DropdownMenuContent>
                       </DropdownMenu>

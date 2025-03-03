@@ -1,6 +1,12 @@
 "use client";
 
-import { Editor, TLUiEventSource, VecLike } from "tldraw";
+import {
+  Editor,
+  TLUiActionsContextType,
+  TLUiEventSource,
+  useDefaultHelpers,
+  VecLike,
+} from "tldraw";
 import { createContext, useContext, useState } from "react";
 
 interface MenuClipboardEventsType {
@@ -20,6 +26,10 @@ interface TldrawContextType {
   setMenuClipBoardEvents: (
     menuClipBoardEvents: MenuClipboardEventsType | null,
   ) => void;
+  helpers: ReturnType<typeof useDefaultHelpers> | null;
+  setHelpers: (h: ReturnType<typeof useDefaultHelpers> | null) => void;
+  actions: TLUiActionsContextType | null;
+  setActions: (a: TLUiActionsContextType | null) => void;
 }
 
 const TldrawContext = createContext<TldrawContextType | undefined>(undefined);
@@ -28,10 +38,23 @@ export function TldrawProvider({ children }: { children: React.ReactNode }) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [menuClipBoardEvents, setMenuClipBoardEvents] =
     useState<MenuClipboardEventsType | null>(null);
+  const [helpers, setHelpers] = useState<ReturnType<
+    typeof useDefaultHelpers
+  > | null>(null);
+  const [actions, setActions] = useState<TLUiActionsContextType | null>(null);
 
   return (
     <TldrawContext.Provider
-      value={{ editor, setEditor, menuClipBoardEvents, setMenuClipBoardEvents }}
+      value={{
+        editor,
+        setEditor,
+        menuClipBoardEvents,
+        setMenuClipBoardEvents,
+        helpers,
+        setHelpers,
+        actions,
+        setActions,
+      }}
     >
       {children}
     </TldrawContext.Provider>
