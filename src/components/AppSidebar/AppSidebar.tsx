@@ -6,6 +6,7 @@ import {
   ChevronRight,
   ChevronUp,
   Cloud,
+  CloudOff,
   Download,
   Home,
   Inbox,
@@ -80,7 +81,7 @@ interface AppSidebarProps {
 
 // TODO: refactor to just use the built-in actions (available thru my custom context) for everything
 export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
-  const { editor, menuClipBoardEvents, actions } = useTldraw();
+  const { editor, menuClipBoardEvents, actions, isSynced } = useTldraw();
 
   const docItems: Item[] = [
     {
@@ -95,28 +96,31 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
           {
             title: "Cut",
             onClick: () => {
-              // if (!editor) return; // TODO: disable if nothing selected
+              // TODO: disable if nothing selected
               menuClipBoardEvents?.cut("menu");
             },
           },
           {
             title: "Copy",
             onClick: () => {
+              // TODO: disable if nothing selected
               menuClipBoardEvents?.copy("menu");
             },
           },
           {
             title: "Paste",
             onClick: () => {
-              navigator.clipboard.read().then((clipboardItems) => {
-                menuClipBoardEvents?.paste(clipboardItems, "menu");
-              });
+              // TODO: disable if nothing copied
+              actions && actions["paste"]?.onSelect("unknown");
             },
           },
-          // TODO: duplicate (if something is selected)
+          // TODO: duplicate (only show if something is selected)
           {
             title: "Delete",
-            onClick: () => editor?.deleteShapes(editor?.getSelectedShapeIds()),
+            onClick: () => {
+              editor?.deleteShapes(editor?.getSelectedShapeIds());
+              // actions && actions['delete']?.onSelect('unknown')
+            },
           },
         ],
         // TODO: maybe re-add this to maintain parity w/ tldraw actions menu, and abstract the export dialog to be used here as well
@@ -134,23 +138,16 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
         //   },
         // ],
 
-        // TODO: edit link (if shape is selected)
-        // TODO: flatten (if shape is selected) <- I believe this means convert to image w/ some padding
+        // TODO: edit link (only show if shape is selected)
+        // TODO: flatten (only show if shape is selected) <- I believe this means convert to image w/ some padding
         //       https://github.com/tldraw/tldraw/blob/main/packages/tldraw/src/lib/ui/context/actions.tsx#L1382
 
-        // TODO: Toggle locked (if shape is selected)
+        // TODO: Toggle locked (only show if shape is selected)
         [
           {
             title: "Unlock All",
             onClick: () => {
-              editor &&
-                Array.from(
-                  editor.getPageShapeIds(editor.getPages()[0]),
-                ).forEach((s) => {
-                  if (editor.getShape(s)?.isLocked) {
-                    editor.toggleLock([s]);
-                  }
-                });
+              actions && actions["unlock-all"]?.onSelect("unknown");
             },
           },
         ],
@@ -292,7 +289,7 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
             title: "Debug Mode",
             onClick: () => {
               editor?.updateInstanceState({
-                isFocusMode: !editor.getInstanceState().isFocusMode,
+                isDebugMode: !editor.getInstanceState().isDebugMode,
               });
             },
           },
@@ -401,8 +398,8 @@ export const AppSidebar: FC<AppSidebarProps> = ({ docId }): React.ReactNode => {
               {/* // TODO: Make this not a button, and maybe make text more minimal (small and gray, look at shadcn typography) */}
               <SidebarMenuItem>
                 <SidebarMenuButton>
-                  <Cloud />
-                  <span>Synced</span>
+                  {isSynced ? <Cloud /> : <CloudOff />}
+                  <span>{isSynced ? "Synced" : "Syncing..."}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

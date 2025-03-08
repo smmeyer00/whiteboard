@@ -1,12 +1,16 @@
 "use client";
 
 import { AppSidebar } from "@/components/AppSidebar";
-import CustomTldraw from "@/components/CustomTldraw";
+// import CustomTldraw from "@/components/CustomTldraw";
+const CustomTldraw = dynamic(() => import("@/components/CustomTldraw"), {
+  ssr: false,
+});
 import { TldrawProvider } from "@/contexts/TldrawContext";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useWhiteboardQuery } from "@/hooks/whiteboard";
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
 export default function Home() {
   const { docId } = useParams<{ docId: string }>();
@@ -28,7 +32,7 @@ export default function Home() {
         {/* <SidebarTrigger /> */} {/** TODO: add custom trigger later */}
         <SidebarInset>
           <div className="w-full h-full space-y-8 p-2 pl-0 rounded-lg overflow-hidden">
-            <CustomTldraw pKey={docId} />
+            <CustomTldraw docId={docId} />
           </div>
         </SidebarInset>
       </SidebarProvider>

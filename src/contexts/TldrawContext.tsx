@@ -30,6 +30,8 @@ interface TldrawContextType {
   setHelpers: (h: ReturnType<typeof useDefaultHelpers> | null) => void;
   actions: TLUiActionsContextType | null;
   setActions: (a: TLUiActionsContextType | null) => void;
+  isSynced: boolean;
+  setIsSynced: (b: boolean) => void;
 }
 
 const TldrawContext = createContext<TldrawContextType | undefined>(undefined);
@@ -42,6 +44,7 @@ export function TldrawProvider({ children }: { children: React.ReactNode }) {
     typeof useDefaultHelpers
   > | null>(null);
   const [actions, setActions] = useState<TLUiActionsContextType | null>(null);
+  const [isSynced, setIsSynced] = useState(false);
 
   return (
     <TldrawContext.Provider
@@ -54,6 +57,8 @@ export function TldrawProvider({ children }: { children: React.ReactNode }) {
         setHelpers,
         actions,
         setActions,
+        isSynced,
+        setIsSynced,
       }}
     >
       {children}
