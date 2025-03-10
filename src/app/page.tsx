@@ -8,44 +8,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlusCircle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { DocumentTableRow } from "@/components/DocumentTableRow";
+import { getDocuments } from "@/lib/actions/whiteboard";
 
-async function getDocuments(userId?: string) {
-  if (!userId) {
-    return [];
-  }
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    include: {
-      whiteboards: {
-        orderBy: { updatedAt: "desc" },
-        include: { collaborators: true },
-      },
-    },
-  });
-  return user?.whiteboards ?? [];
-}
-
-// TODO: add new document handling (pop a modal that asks for title and description, then redirect to new doc)
 export default async function HomePage() {
-  const { userId } = await auth();
-
-  const documents = await getDocuments(userId ?? undefined);
+  const documents = await getDocuments(); // TODO: use the hook instead, and create a mutation hook for creating new doc
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
+    <div className="container mx-auto py-6 px-4 sm:px-6 lg:py-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Documents</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Documents
+          </h1>
           <p className="text-muted-foreground mt-2">
             Manage and access your whiteboards
           </p>
         </div>
-        <Button asChild>
+        {/** TODO: use onClick for some custom logic instead of link, might need client component for button */}
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/d/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Document
@@ -53,22 +35,22 @@ export default async function HomePage() {
         </Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[300px]">Name</TableHead>
-              <TableHead className="w-[400px]">Description</TableHead>
-              <TableHead>Last Updated</TableHead>
-              <TableHead>Collaborators</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[180px] sm:w-[300px]">Name</TableHead>
+              <TableHead className="hidden sm:table-cell w-[400px]">
+                Description
+              </TableHead>
+              <TableHead className="min-w-[120px]">Last Updated</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {documents.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={3}
                   className="text-center h-24 text-muted-foreground"
                 >
                   No documents yet. Create your first one!
@@ -76,27 +58,13 @@ export default async function HomePage() {
               </TableRow>
             ) : (
               documents.map((doc) => (
-                <TableRow key={doc.id}>
-                  <TableCell className="font-medium">
-                    <Link href={`/d/${doc.id}`} className="hover:underline">
-                      {doc.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {doc.description || "No description"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDistanceToNow(new Date(doc.updatedAt), {
-                      addSuffix: true,
-                    })}
-                  </TableCell>
-                  <TableCell>{doc.collaborators.length}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/d/${doc.id}`}>Open</Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                <DocumentTableRow
+                  key={doc.id}
+                  id={doc.id}
+                  name={doc.name}
+                  description={doc.description}
+                  updatedAt={doc.updatedAt}
+                />
               ))
             )}
           </TableBody>

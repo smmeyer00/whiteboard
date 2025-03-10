@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getWhiteboard, updateWhiteboard } from "@/lib/actions/whiteboard";
+import {
+  getWhiteboard,
+  updateWhiteboard,
+  getDocuments,
+} from "@/lib/actions/whiteboard";
 import { Prisma } from "@prisma/client";
 
 // TODO: break into more granular hooks (ie get name, get data, get description, etc...)
@@ -53,5 +57,12 @@ export function useUpdateWhiteboardMutation(
       // Refetch after error or success
       queryClient.invalidateQueries({ queryKey: ["whiteboard", id] });
     },
+  });
+}
+
+export function useDocumentsQuery() {
+  return useQuery({
+    queryKey: ["documents"],
+    queryFn: () => getDocuments(),
   });
 }
