@@ -91,20 +91,24 @@ export default function CustomTldraw({ docId }: CustomTldrawProps) {
     mutate,
     isSuccess,
     isError: isUpdateError,
-  } = useUpdateWhiteboardMutation();
-  useLayoutEffect(() => {
+  } = useUpdateWhiteboardMutation(false);
+  useEffect(() => {
     // initial load
     if (isLoading) return;
 
-    if (data?.content) {
+    if (data?.content && !firstLoadDone) {
       console.log("content: ", data.content);
       try {
         loadSnapshot(
           store,
           data.content as Partial<TLEditorSnapshot> | TLStoreSnapshot,
         );
-      } catch (error: any) {
-        console.error("Uh oh, problem loading whiteboard data");
+        setFirstLoadDone(true);
+      } catch (error) {
+        console.error(
+          "Uh oh, problem loading whiteboard data with error: ",
+          error,
+        );
         // TODO: pop some modal or error screen w/ redirect back to home or retry button
       }
     }
@@ -127,13 +131,13 @@ export default function CustomTldraw({ docId }: CustomTldrawProps) {
             content: JSON.parse(JSON.stringify(snapshot)),
           },
         });
-      }, 1500),
+      }, 1000),
     );
 
     return () => {
       cleanupFn();
     };
-  }, [store, isLoading]);
+  }, [store, isLoading, firstLoadDone]);
 
   useLayoutEffect(() => {
     const cFunc = store.listen(
@@ -145,16 +149,16 @@ export default function CustomTldraw({ docId }: CustomTldrawProps) {
           const savedContent = JSON.parse(JSON.stringify(data?.content));
           setIsSynced(isEqual(currentSnapshot, savedContent));
           console.log("Setting isSynced");
-        } catch (error: any) {
-          console.error("Session state probably not ready yet");
+        } catch (error) {
+          console.log("Session state probably not ready yet. Error: ", error);
         }
-      }, 500), // TODO: this isnt firing immediately after releasing 'draw', but only fires when mouse moves after that
+      }, 500), // FIXME: this isnt firing immediately after releasing 'draw', but only fires when mouse moves after that
       // figure out how to fix above w/ current event driven setup, or just set it to run periodicaly if needed
     );
     return () => {
       cFunc();
     };
-  }, [data, store]);
+  }, [data, setIsSynced, store]);
 
   return (
     <Tldraw

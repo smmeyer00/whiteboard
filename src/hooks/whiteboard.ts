@@ -11,7 +11,9 @@ export function useWhiteboardQuery(id: number) {
   });
 }
 
-export function useUpdateWhiteboardMutation() {
+export function useUpdateWhiteboardMutation(
+  optimisticCacheUpdate: boolean = true,
+) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -29,11 +31,16 @@ export function useUpdateWhiteboardMutation() {
       // Get current data
       const previousData = queryClient.getQueryData(["whiteboard", id]);
 
-      // Optimistically update the cache
-      queryClient.setQueryData(["whiteboard", id], (old: any) => ({
-        ...old,
-        ...data,
-      }));
+      if (optimisticCacheUpdate) {
+        // Optimistically update the cache
+        queryClient.setQueryData(
+          ["whiteboard", id],
+          (old: Prisma.WhiteboardUpdateInput | undefined) => ({
+            ...old,
+            ...data,
+          }),
+        );
+      }
 
       // Return context with previous data
       return { previousData };
