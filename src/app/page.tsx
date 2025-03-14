@@ -9,11 +9,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { DocumentTableRow } from "@/components/DocumentTableRow";
-import { useDocumentsQuery } from "@/hooks/whiteboard";
+import {
+  useCreateDocumentMutation,
+  useDocumentsQuery,
+} from "@/hooks/whiteboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 function TableRowSkeleton() {
   return (
@@ -33,6 +38,15 @@ function TableRowSkeleton() {
 
 export default function HomePage() {
   const { data: documents, isLoading } = useDocumentsQuery();
+  const {
+    mutate: createDocument,
+    isPending,
+    isError,
+  } = useCreateDocumentMutation();
+
+  const newDocumentButtonHandler = () => {
+    createDocument();
+  };
 
   return (
     <div className="container mx-auto py-6 px-4 sm:px-6 lg:py-10">
@@ -45,16 +59,27 @@ export default function HomePage() {
             Manage and access your whiteboards
           </p>
         </div>
-        <Button asChild className="w-full sm:w-auto">
-          <Link href="/d/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Document
-          </Link>
+        <Button
+          className={`w-full sm:w-[160] ${isPending ? "cursor-wait" : ""}`}
+          onClick={newDocumentButtonHandler}
+          disabled={isPending}
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              New Document
+            </>
+          )}
         </Button>
       </div>
 
       <div className="rounded-md border overflow-x-auto">
-        <Table>
+        <Table suppressHydrationWarning>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[180px] sm:w-[300px]">Name</TableHead>
@@ -66,9 +91,7 @@ export default function HomePage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <>
-                <TableRowSkeleton />
-              </>
+              <TableRowSkeleton />
             ) : !documents ? (
               <TableRow>
                 <TableCell

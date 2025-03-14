@@ -72,3 +72,23 @@ export async function getDocuments() {
   });
   return user?.whiteboards ?? [];
 }
+export async function createDocument() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  const whiteboard = await prisma.whiteboard.create({
+    data: {
+      name: "Untitled",
+      ownerId: user.id,
+      content: {}, // Add required content field
+    },
+  });
+
+  return whiteboard;
+}

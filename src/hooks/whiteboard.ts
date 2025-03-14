@@ -3,8 +3,10 @@ import {
   getWhiteboard,
   updateWhiteboard,
   getDocuments,
+  createDocument,
 } from "@/lib/actions/whiteboard";
 import { Prisma } from "@prisma/client";
+import { useRouter } from "next/navigation";
 
 // TODO: break into more granular hooks (ie get name, get data, get description, etc...)
 
@@ -64,5 +66,20 @@ export function useDocumentsQuery() {
   return useQuery({
     queryKey: ["documents"],
     queryFn: () => getDocuments(),
+  });
+}
+
+export function useCreateDocumentMutation() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: createDocument,
+    onSuccess: (newDoc) => {
+      router.push(`/d/${newDoc.id}`);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
   });
 }
