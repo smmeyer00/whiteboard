@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,10 +12,27 @@ import {
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { DocumentTableRow } from "@/components/DocumentTableRow";
-import { getDocuments } from "@/lib/actions/whiteboard";
+import { useDocumentsQuery } from "@/hooks/whiteboard";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function HomePage() {
-  const documents = await getDocuments(); // TODO: use the hook instead, and create a mutation hook for creating new doc
+function TableRowSkeleton() {
+  return (
+    <TableRow>
+      <TableCell>
+        <Skeleton className="h-4 w-[140px] sm:w-[200px]" />
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
+        <Skeleton className="h-4 w-[250px]" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-4 w-[80px]" />
+      </TableCell>
+    </TableRow>
+  );
+}
+
+export default function HomePage() {
+  const { data: documents, isLoading } = useDocumentsQuery();
 
   return (
     <div className="container mx-auto py-6 px-4 sm:px-6 lg:py-10">
@@ -26,7 +45,6 @@ export default async function HomePage() {
             Manage and access your whiteboards
           </p>
         </div>
-        {/** TODO: use onClick for some custom logic instead of link, might need client component for button */}
         <Button asChild className="w-full sm:w-auto">
           <Link href="/d/new">
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -47,7 +65,20 @@ export default async function HomePage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {documents.length === 0 ? (
+            {isLoading ? (
+              <>
+                <TableRowSkeleton />
+              </>
+            ) : !documents ? (
+              <TableRow>
+                <TableCell
+                  colSpan={3}
+                  className="text-center h-24 text-muted-foreground"
+                >
+                  Error loading documents
+                </TableCell>
+              </TableRow>
+            ) : documents.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={3}
